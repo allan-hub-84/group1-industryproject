@@ -14,7 +14,7 @@ def is_within_radius(event_postal, user_coords, postal_coords, radius_km):
 
 
 
-def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal_coords):
+def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df):
     # Combine the new user input questions
     new_text = " ".join(str(data.get(f"question_{i}", "")).replace(",", " ").strip() for i in range(1, 6))
     # Vectorize the new user based on the vectorizer we had used on our train data
@@ -49,11 +49,11 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
     top_users_events = events_df[events_df["organizer_id"].isin(top_user_ids)].copy()
     top_users_events["postalcode"] = top_users_events["postalcode"].str.replace(" ", "")
    
-    # Get current- user lat and lng
-    user_postal = str(data.get("postal_code", "")).strip()
-    user_coords = postal_coords.get(user_postal)
-    if not user_coords:
-        return {"error": "User postal code not found in dataset."}, 400
+    # # Get current- user lat and lng
+    # user_postal = str(data.get("postal_code", "")).strip()
+    # user_coords = postal_coords.get(user_postal)
+    # if not user_coords:
+    #     return {"error": "User postal code not found in dataset."}, 400
     
     # Get the Events on and after the date
     # Filter events by date
@@ -63,8 +63,8 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
     else:
         event_date_converted = pd.to_datetime(datetime.now().date())
 
-    top_users_events["date"] = pd.to_datetime(top_users_events["date"])
-    top_users_events = top_users_events[top_users_events["date"] >= event_date_converted]
+    top_users_events["converted_date"] = pd.to_datetime(top_users_events["date"])
+    top_users_events = top_users_events[top_users_events["converted_date"] >= event_date_converted]
 
 
     # # Find the events near user defined radius
@@ -74,7 +74,7 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
     # ]
 
     # Merge with user info name and email
-    user_info = users_df[['customer_ID', 'first_name', 'last_name', 'email']]
+    user_info = users_df[['customer_ID', 'first_name', 'last_name', 'email', 'home_store_add','home_store_fsa']]
     top_users_events_new = top_users_events.merge(user_info, left_on='organizer_id', right_on='customer_ID', how='left')
     top_users_events_new = top_users_events_new.drop(columns=['customer_ID'])
 
@@ -83,7 +83,15 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
         'first_name': 'organizer_first_name',
         'last_name': 'organizer_last_name',
         'email': 'organizer_email',
-        'date': 'event_date'
+        'date': 'event_date',
+        'home_store_add': 'organizer_home_store_add',
+        'home_store_fsa' : 'organizer_home_store_postal',
+        'address': 'event_address',
+        'postalcode': 'event_postal_code',
+        'time': 'event_time',
+        'name': 'event_name',
+        'loc_name': 'event_loc_name',
+        'duration': 'event_duration'
     })
     
     # Return results
