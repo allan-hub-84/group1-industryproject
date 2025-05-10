@@ -1,5 +1,6 @@
 from sklearn.metrics.pairwise import cosine_similarity
 from geopy.distance import geodesic
+from datetime import datetime
 import pandas as pd 
 
 def is_within_radius(event_postal, user_coords, postal_coords, radius_km):
@@ -27,8 +28,22 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
         'similarity': scores 
     })
     
-    top_users = sim_df.sort_values(by='similarity', ascending=False).head(20)
+    # Cosine Similarity threshold 0.7
+    top_users = sim_df[sim_df['similarity'] > 0.7]
+
+    # Cosine Similarity threshold 0.6 if the 0.7 threshold give us less than 10 users
+    if len(top_users) < 10:
+        top_users = sim_df[sim_df['similarity'] > 0.6]
+    
+    # Cosine Similarity threshold 0.5 if the 0.6 threshold give us less than 10 users
+    if len(top_users) < 10:
+        top_users = sim_df[sim_df['similarity'] > 0.5]
+    
     top_user_ids = top_users['customer_ID'].tolist()
+
+    print("threshold > 0.7:", len(sim_df[sim_df['similarity'] > 0.7]))
+    print("threshold > 0.6:", len(sim_df[sim_df['similarity'] > 0.6]))
+    print("Final selected users:", len(top_user_ids))
 
     # Remove the space from the poststal code
     top_users_events = events_df[events_df["organizer_id"].isin(top_user_ids)].copy()
@@ -41,12 +56,15 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
         return {"error": "User postal code not found in dataset."}, 400
     
     # Get the Events on and after the date
+    # Filter events by date
     event_date = data.get("date")
     if event_date:
-        top_users_events["date"] = pd.to_datetime(top_users_events["date"])
         event_date_converted = pd.to_datetime(event_date)
-        top_users_events = top_users_events[top_users_events["date"] >= event_date_converted]
-    print(top_users_events.postalcode)
+    else:
+        event_date_converted = pd.to_datetime(datetime.now().date())
+
+    top_users_events["date"] = pd.to_datetime(top_users_events["date"])
+    top_users_events = top_users_events[top_users_events["date"] >= event_date_converted]
 
 
     # # Find the events near user defined radius
