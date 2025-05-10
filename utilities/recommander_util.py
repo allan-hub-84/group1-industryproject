@@ -1,5 +1,7 @@
 from sklearn.metrics.pairwise import cosine_similarity
 from geopy.distance import geodesic
+import pandas as pd 
+
 
 def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal_coords):
     # Combine the new user input questions
@@ -20,4 +22,19 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
 
     top_users_events = events_df[events_df["organizer_id"].isin(top_user_ids)]
 
-    return nearby_events.to_dict(orient="records"), 200
+    #Remove the space into postal code 
+    top_users_events["postalcode"] = top_users_events["postalcode"].astype(str).str.strip()
+
+    # Get user location
+    user_postal = str(data.get("postal_code", "")).strip()
+    user_coords = postal_coords.get(user_postal)
+    if not user_coords:
+        return {"error": "User postal code not found in dataset."}, 400
+
+    # Merge with user info name and email
+    user_info = users_df[['customer_ID', 'first_name', 'last_name', 'email']]
+    merged = top_users_events.merge(user_info, left_on='organizer_id', right_on='customer_ID', how='left')
+    merged = merged.drop(columns=['customer_ID'])
+    
+    # Return results
+    return merged.to_dict(orient="records"), 200
