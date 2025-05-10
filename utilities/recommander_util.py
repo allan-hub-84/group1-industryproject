@@ -49,11 +49,11 @@ def recommend_events(data, vectorizer, tfidf_matrix, users_df, events_df, postal
     print(top_users_events.postalcode)
 
 
-    # Find the events near user defined radius
-    radius_km = float(data.get("radius", 10))  
-    top_users_events = top_users_events[
-        top_users_events["postalcode"].apply(lambda p: is_within_radius(p, user_coords, postal_coords, radius_km))
-    ]
+    # # Find the events near user defined radius
+    # radius_km = float(data.get("radius", 10))  
+    # top_users_events = top_users_events[
+    #     top_users_events["postalcode"].apply(lambda p: is_within_radius(p, user_coords, postal_coords, radius_km))
+    # ]
 
     # Merge with user info name and email
     user_info = users_df[['customer_ID', 'first_name', 'last_name', 'email']]
