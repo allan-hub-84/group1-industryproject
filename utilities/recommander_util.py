@@ -1,7 +1,8 @@
 from sklearn.metrics.pairwise import cosine_similarity
 from geopy.distance import geodesic
 from datetime import datetime
-import pandas as pd 
+import pandas as pd
+import numpy as np  
 
 def is_within_radius(event_postal, user_coords, postal_coords, radius_km):
     """
@@ -11,6 +12,12 @@ def is_within_radius(event_postal, user_coords, postal_coords, radius_km):
     if not event_coords:
         return False
     return geodesic(user_coords, event_coords).km <= radius_km
+
+def get_user_vector(event_list, model):
+    vectors = [model.wv[event] for event in event_list if event in model.wv]
+    if not vectors:
+        return np.zeros(model.vector_size)
+    return np.mean(vectors, axis=0)
 
 
 
